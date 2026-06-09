@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出来高計算</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f4f4f4;
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e0eaff;
+    letter-spacing: 0.05em;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a1a;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 10px;
+  }
+
+  input[type="number"]:focus { border-color: #3b82f6; }
+
+  .pk-section { margin-bottom: 28px; }
+
+  .pk-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .pk-input-row input { margin-bottom: 0; font-size: 20px; padding: 10px 12px; }
+
+  .pk-add-btn {
+    flex-shrink: 0;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .pk-add-btn:hover { background: #2563eb; }
+
+  .pk-total-box {
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .pk-total-label { font-size: 12px; color: #3b82f6; font-weight: 600; }
+  .pk-total-value { font-size: 26px; font-weight: 700; color: #1d4ed8; }
+
+  .pk-history { font-size: 12px; color: #aaa; margin-bottom: 8px; min-height: 18px; line-height: 1.8; }
+
+  .pk-reset-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #aaa;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .pk-reset-btn:hover { color: #f87171; border-color: #f87171; }
+
+  .divider { border: none; border-top: 2px solid #f0f0f0; margin: 28px 0; }
+
+  .reset-all-btn {
+    width: 100%;
+    background: none;
+    border: 2px solid #f87171;
+    border-radius: 10px;
+    color: #f87171;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .reset-all-btn:hover { background: #fef2f2; }
+
+  .toggle-wrap { display: flex; gap: 10px; margin-bottom: 16px; }
+
+  .toggle-btn {
+    flex: 1;
+    border: 2px solid #ddd;
+    background: #fff;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #aaa;
+    padding: 14px 0;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .toggle-btn.active { border-color: #3b82f6; background: #eff6ff; color: #3b82f6; }
+
+  .calc-btn {
+    width: 100%;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 15px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: background 0.2s, transform 0.1s;
+    margin-bottom: 20px;
+  }
+  .calc-btn:hover { background: #2563eb; }
+  .calc-btn:active { transform: scale(0.98); }
+
+  .result-section { display: none; }
+  .result-section.show { display: block; }
+
+  .result-header {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  .result-header span { font-weight: 700; color: #3b82f6; }
+
+  .result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  /* チェック付きアイテム */
+  .result-item {
+    background: #f8faff;
+    border: 1.5px solid #e0eaff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .result-item.first { background: #fffbeb; border-color: #fcd34d; }
+
+  .result-item.checked {
+    background: #f0fdf4;
+    border-color: #86efac;
+  }
+
+  .item-left { display: flex; flex-direction: column; gap: 2px; }
+  .item-no { font-size: 11px; color: #aaa; font-weight: 500; }
+  .item-val { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+  .item-val.first-val { color: #d97706; }
+  .result-item.checked .item-val { color: #16a34a; }
+
+  .check-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    color: transparent;
+    background: #fff;
+  }
+
+  .result-item.checked .check-mark {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- PK計算 -->
+  <h2>📦 PK累計計算（1PK = 120個）</h2>
+  <div class="pk-section">
+    <div class="pk-input-row">
+      <input type="number" id="pkInput" placeholder="PK数" inputmode="numeric">
+      <button class="pk-add-btn" onclick="addPK()">追加</button>
+    </div>
+    <div class="pk-total-box">
+      <span class="pk-total-label">累計生産数</span>
+      <span class="pk-total-value" id="pkTotal">0 個</span>
+    </div>
+    <div class="pk-history" id="pkHistory"></div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- 確認ポイント -->
+  <h2>📋 確認ポイント計算</h2>
+  <div class="confirm-section">
+    <label>合計生産数</label>
+    <input type="number" id="total" placeholder="" inputmode="numeric">
+
+    <label>ロット数</label>
+    <div class="toggle-wrap">
+      <button class="toggle-btn active" id="btn500" onclick="selectStep(500)">500</button>
+      <button class="toggle-btn" id="btn1000" onclick="selectStep(1000)">1000</button>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">計 算</button>
+
+    <div class="result-section" id="resultSection">
+      <div class="result-header" id="resultHeader"></div>
+      <div class="result-grid" id="resultGrid"></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <button class="reset-all-btn" onclick="resetAll()">🔄 全リセット</button>
+
+</div>
+
+<script>
+  // ── localStorage保存・読込 ──
+  function saveState() {
+    const checkedItems = [];
+    document.querySelectorAll('.result-item').forEach((el, i) => {
+      if (el.classList.contains('checked')) checkedItems.push(i);
+    });
+    localStorage.setItem('dk_pkTotal', pkTotal);
+    localStorage.setItem('dk_pkLog', JSON.stringify(pkLog));
+    localStorage.setItem('dk_step', step);
+    localStorage.setItem('dk_total', document.getElementById('total').value);
+    localStorage.setItem('dk_checked', JSON.stringify(checkedItems));
+    localStorage.setItem('dk_resultShown', document.getElementById('resultSection').classList.contains('show') ? '1' : '0');
+  }
+
+  function loadState() {
+    pkTotal = parseInt(localStorage.getItem('dk_pkTotal') || '0');
+    pkLog = JSON.parse(localStorage.getItem('dk_pkLog') || '[]');
+    step = parseInt(localStorage.getItem('dk_step') || '500');
+    const savedTotal = localStorage.getItem('dk_total') || '';
+    const savedChecked = JSON.parse(localStorage.getItem('dk_checked') || '[]');
+    const resultShown = localStorage.getItem('dk_resultShown') === '1';
+
+    // PK表示復元
+    document.getElementById('pkTotal').textContent = pkTotal.toLocaleString() + ' 個';
+    document.getElementById('pkHistory').textContent =
+      pkLog.map((v, i) => `${i+1}回目: ${v}PK`).join('　');
+
+    // ロット選択復元
+    document.getElementById('btn500').classList.toggle('active', step === 500);
+    document.getElementById('btn1000').classList.toggle('active', step === 1000);
+
+    // 合計生産数復元
+    if (savedTotal) document.getElementById('total').value = savedTotal;
+
+    // 結果復元
+    if (resultShown && savedTotal) {
+      calculate(savedChecked);
+    }
+  }
+
+  // ── PK計算 ──
+  let pkTotal = 0;
+  let pkLog = [];
+
+  function addPK() {
+    const val = parseInt(document.getElementById('pkInput').value);
+    if (!val || val <= 0) return;
+    pkTotal += val * 120;
+    pkLog.push(val);
+    document.getElementById('pkTotal').textContent = pkTotal.toLocaleString() + ' 個';
+    document.getElementById('pkHistory').textContent =
+      pkLog.map((v, i) => `${i+1}回目: ${v}PK`).join('　');
+    document.getElementById('pkInput').value = '';
+    document.getElementById('pkInput').focus();
+    document.getElementById('total').value = pkTotal;
+    saveState();
+  }
+
+  function resetAll() {
+    if (!confirm('全てリセットしますか？')) return;
+    pkTotal = 0;
+    pkLog = [];
+    document.getElementById('pkTotal').textContent = '0 個';
+    document.getElementById('pkHistory').textContent = '';
+    document.getElementById('pkInput').value = '';
+    document.getElementById('total').value = '';
+    document.getElementById('resultSection').classList.remove('show');
+    document.getElementById('resultGrid').innerHTML = '';
+    localStorage.clear();
+  }
+
+  document.getElementById('pkInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addPK();
+  });
+
+  // ── 確認ポイント計算 ──
+  let step = 500;
+
+  function selectStep(val) {
+    step = val;
+    document.getElementById('btn500').classList.toggle('active', val === 500);
+    document.getElementById('btn1000').classList.toggle('active', val === 1000);
+    saveState();
+  }
+
+  function toggleCheck(el) {
+    el.classList.toggle('checked');
+    saveState();
+  }
+
+  function calculate(restoreChecked = null) {
+    const total = parseInt(document.getElementById('total').value);
+    if (!total || total <= 0) {
+      if (!restoreChecked) alert('合計生産数を入力してください');
+      return;
+    }
+
+    const nextBoundary = Math.ceil(total / step) * step;
+    const firstDiff = nextBoundary - total;
+
+    const grid = document.getElementById('resultGrid');
+    const header = document.getElementById('resultHeader');
+    const section = document.getElementById('resultSection');
+
+    header.innerHTML = `合計 <span>${total.toLocaleString()}</span> 個 ／ ロット <span>${step.toLocaleString()}</span> 個`;
+
+    const count = step === 500 ? 35 : 18;
+
+    grid.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const val = firstDiff + step * i;
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      if (restoreChecked && restoreChecked.includes(i)) item.classList.add('checked');
+      const cumulative = total + val;
+      item.innerHTML = `
+        <div class="item-left">
+          <span class="item-no">モニター数</span>
+          <span class="item-val">${val.toLocaleString()}</span>
+          <span style="font-size:11px;color:#888;">計 ${cumulative.toLocaleString()}</span>
+        </div>
+        <div class="check-mark">✓</div>
+      `;
+      item.addEventListener('click', () => toggleCheck(item));
+      grid.appendChild(item);
+    }
+
+    section.classList.add('show');
+    if (!restoreChecked) saveState();
+  }
+
+  document.getElementById('total').addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+  });
+
+  // ページ読込時に復元
+  loadState();
+</script>
+</body>
+</html>
